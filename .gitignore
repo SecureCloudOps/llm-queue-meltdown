@@ -1,0 +1,27 @@
+# Python and caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# macOS and editors
+.DS_Store
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local configuration, logs and experiment output
+.env
+.env.*
+*.log
+.cache/
+/artifacts/
+/results/

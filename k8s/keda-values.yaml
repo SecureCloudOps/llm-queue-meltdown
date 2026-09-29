@@ -1,0 +1,13 @@
+# KEDA 2.20.2 supports this lab's Kubernetes 1.33.
+resources:
+  operator:
+    requests: {cpu: 100m, memory: 100Mi}
+    limits: {cpu: '1', memory: 256Mi}
+  metricServer:
+    requests: {cpu: 100m, memory: 100Mi}
+    limits: {cpu: '1', memory: 256Mi}
+  webhooks:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {cpu: 500m, memory: 128Mi}
+image:
+  pullPolicy: IfNotPresent
