@@ -10,8 +10,9 @@ accepting requests faster than it could serve them.
 
 ## Investigation
 
-Streaming client timings and per-pod metrics exposed waiting requests, queue
-time, CPU saturation and memory pressure. Early scaling attempts requested
+CPU correctly signaled saturation. vLLM metrics explained the inference-specific
+impact through waiting requests and queue time, while streaming client timings
+measured TTFT and E2E latency. Early scaling attempts requested
 three replicas, but insufficient capacity left two Pending. Port-forward
 traffic also targeted one pod and could not validate load balancing.
 
@@ -52,3 +53,5 @@ Autoscaling reduced queueing and E2E latency, but cold-start tail latency
 remained high. Existing queued requests stayed on the original pod. Each
 scenario ran once; fixed concurrency permits more requests as latency falls,
 so this is not a fixed-arrival-rate benchmark or proof of a latency SLO.
+No CPU-based autoscaler was tested; these results do not establish that
+queue-based scaling outperforms CPU-based scaling.
