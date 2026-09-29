@@ -3,6 +3,8 @@
 A CPU-backed vLLM experiment: sustained traffic → Kubernetes Service → vLLM
 → Prometheus → KEDA.
 
+Start with the [Kubernetes manifests](k8s/), run the [load test](load/load_test.py), then review the [validated results](evidence/results.md).
+
 ## Symptom
 
 Inference latency rose while health checks remained green. A Ready pod was
