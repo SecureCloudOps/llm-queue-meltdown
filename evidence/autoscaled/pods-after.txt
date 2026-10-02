@@ -1,0 +1,5 @@
+NAME                          READY   STATUS    RESTARTS   AGE     IP              NODE                            NOMINATED NODE   READINESS GATES
+load-generator                1/1     Running   0          54m     REDACTED_IP   gpu-node-3   <none>           <none>
+prometheus-85ff9f8967-74p62   1/1     Running   0          85m     REDACTED_IP   gpu-node-3   <none>           <none>
+vllm-876cdb784-k5svg          1/1     Running   0          93m     REDACTED_IP    gpu-node-1   <none>           <none>
+vllm-876cdb784-rb7tv          1/1     Running   0          6m28s   REDACTED_IP   gpu-node-2    <none>           <none>

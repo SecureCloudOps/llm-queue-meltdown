@@ -1,4 +1,4 @@
-# KEDA 2.20.2 supports this lab's Kubernetes 1.33.
+# KEDA 2.20.2 supports the EKS lab's Kubernetes 1.35.
 resources:
   operator:
     requests: {cpu: 100m, memory: 100Mi}

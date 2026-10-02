@@ -25,3 +25,13 @@ htmlcov/
 .cache/
 /artifacts/
 /results/
+
+# Terraform local state, inputs and generated plans
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+crash.log
+crash.*.log

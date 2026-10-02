@@ -1,0 +1,23 @@
+{
+  "requests": 1072,
+  "successes": 1072,
+  "p95_ttft_s": 4.667325934000019,
+  "p95_e2e_s": 6.891632654000205,
+  "p95_queue_histogram": {
+    "estimate_s": 4.873226111636708,
+    "bucket_low_s": 2.5,
+    "bucket_high_s": 5.0
+  },
+  "mean_queue_s": 4.490981754986939,
+  "max_waiting": 21.0,
+  "max_ready": 1,
+  "first_three_ready_s": null,
+  "max_desired": 1,
+  "cpu_total_mean_cores": 0.9732819968253968,
+  "cpu_total_max_cores": 1.08171061,
+  "max_pod_working_set_mib": 2252.8359375,
+  "completions_by_pod": {
+    "vllm-876cdb784-k5svg": 1072.0
+  },
+  "telemetry_errors": []
+}

@@ -1,0 +1,16 @@
+{
+  "duration_s": 300,
+  "concurrency": 24,
+  "elapsed_s": 312.3877903319999,
+  "requests": 2246,
+  "successes": 2246,
+  "service": "http://vllm.vllm-lab.svc.cluster.local:8000",
+  "ttft_s": {
+    "mean": 0.9579014334479131,
+    "p95": 4.6304002739998396
+  },
+  "e2e_s": {
+    "mean": 3.220885975269801,
+    "p95": 6.853666112999235
+  }
+}

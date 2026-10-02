@@ -1,0 +1,20 @@
+{
+  "placements": {
+    "vllm-876cdb784-k5svg": [
+      "gpu-node-1"
+    ],
+    "vllm-876cdb784-l6qp5": [
+      "gpu-node-3"
+    ],
+    "vllm-876cdb784-rb7tv": [
+      "gpu-node-2"
+    ]
+  },
+  "max_recorded_restarts": {
+    "vllm-876cdb784-k5svg": 0,
+    "vllm-876cdb784-l6qp5": 0,
+    "vllm-876cdb784-rb7tv": 0
+  },
+  "all_requests_have_expected_token_counts": true,
+  "sample_count": 62
+}

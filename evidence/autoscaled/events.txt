@@ -1,0 +1,49 @@
+LAST SEEN   TYPE      REASON                 OBJECT                                          MESSAGE
+35m         Normal    ScaledObjectUnpaused   scaledobject/vllm-waiting                       pause annotation removed for ScaledObject
+35m         Normal    KEDAScalersStarted     scaledobject/vllm-waiting                       Started scalers watch
+35m         Normal    KEDAScalersStarted     scaledobject/vllm-waiting                       Scaler prometheus is built
+54m         Normal    Scheduled              pod/load-generator                              Successfully assigned vllm-lab/load-generator to gpu-node-3
+54m         Normal    Pulling                pod/load-generator                              Pulling image "python:3.12-slim"
+54m         Normal    Started                pod/load-generator                              Container started
+54m         Normal    Pulled                 pod/load-generator                              Successfully pulled image "python:3.12-slim" in 2.064s (2.064s including waiting). Image size: 46237854 bytes.
+54m         Normal    Created                pod/load-generator                              Container created
+35m         Normal    Scheduled              pod/vllm-876cdb784-h7dhz                        Successfully assigned vllm-lab/vllm-876cdb784-h7dhz to gpu-node-3
+35m         Normal    Scheduled              pod/vllm-876cdb784-f9qtk                        Successfully assigned vllm-lab/vllm-876cdb784-f9qtk to gpu-node-2
+35m         Normal    Pulling                pod/vllm-876cdb784-f9qtk                        Pulling image "vllm/vllm-openai:v0.11.2"
+35m         Normal    SuccessfulCreate       replicaset/vllm-876cdb784                       Created pod: vllm-876cdb784-f9qtk
+35m         Normal    SuccessfulRescale      horizontalpodautoscaler/keda-hpa-vllm-waiting   New size: 3; reason: external metric s0-prometheus(&LabelSelector{MatchLabels:map[string]string{scaledobject.keda.sh/name: vllm-waiting,},MatchExpressions:[]LabelSelectorRequirement{},}) above target
+35m         Normal    SuccessfulCreate       replicaset/vllm-876cdb784                       Created pod: vllm-876cdb784-h7dhz
+35m         Normal    Pulling                pod/vllm-876cdb784-h7dhz                        Pulling image "vllm/vllm-openai:v0.11.2"
+35m         Normal    ScalingReplicaSet      deployment/vllm                                 Scaled up replica set vllm-876cdb784 from 1 to 3
+29m         Normal    Pulled                 pod/vllm-876cdb784-h7dhz                        Successfully pulled image "vllm/vllm-openai:v0.11.2" in 6m19.183s (6m19.183s including waiting). Image size: 14014947077 bytes.
+29m         Normal    Created                pod/vllm-876cdb784-h7dhz                        Container created
+29m         Normal    Started                pod/vllm-876cdb784-h7dhz                        Container started
+29m         Normal    Created                pod/vllm-876cdb784-f9qtk                        Container created
+29m         Normal    Pulled                 pod/vllm-876cdb784-f9qtk                        Successfully pulled image "vllm/vllm-openai:v0.11.2" in 6m32.487s (6m32.487s including waiting). Image size: 14014947077 bytes.
+29m         Normal    Started                pod/vllm-876cdb784-f9qtk                        Container started
+28m         Warning   Unhealthy              pod/vllm-876cdb784-h7dhz                        Startup probe failed: Get "http://REDACTED_IP:8000/health": dial tcp REDACTED_IP:8000: connect: connection refused
+27m         Warning   Unhealthy              pod/vllm-876cdb784-f9qtk                        Startup probe failed: Get "http://REDACTED_IP:8000/health": dial tcp REDACTED_IP:8000: connect: connection refused
+25m         Normal    SuccessfulDelete       replicaset/vllm-876cdb784                       Deleted pod: vllm-876cdb784-h7dhz
+25m         Normal    Killing                pod/vllm-876cdb784-h7dhz                        Stopping container vllm
+25m         Normal    ScalingReplicaSet      deployment/vllm                                 Scaled down replica set vllm-876cdb784 from 3 to 1
+25m         Normal    SuccessfulRescale      horizontalpodautoscaler/keda-hpa-vllm-waiting   New size: 1; reason: All metrics below target
+25m         Normal    Killing                pod/vllm-876cdb784-f9qtk                        Stopping container vllm
+25m         Normal    SuccessfulDelete       replicaset/vllm-876cdb784                       Deleted pod: vllm-876cdb784-f9qtk
+6m27s       Normal    ScalingReplicaSet      deployment/vllm                                 Scaled up replica set vllm-876cdb784 from 1 to 3
+6m27s       Normal    Scheduled              pod/vllm-876cdb784-rb7tv                        Successfully assigned vllm-lab/vllm-876cdb784-rb7tv to gpu-node-2
+6m27s       Normal    SuccessfulRescale      horizontalpodautoscaler/keda-hpa-vllm-waiting   New size: 3; reason: external metric s0-prometheus(&LabelSelector{MatchLabels:map[string]string{scaledobject.keda.sh/name: vllm-waiting,},MatchExpressions:[]LabelSelectorRequirement{},}) above target
+6m27s       Normal    SuccessfulCreate       replicaset/vllm-876cdb784                       Created pod: vllm-876cdb784-rb7tv
+6m27s       Normal    SuccessfulCreate       replicaset/vllm-876cdb784                       Created pod: vllm-876cdb784-l6qp5
+6m27s       Normal    Scheduled              pod/vllm-876cdb784-l6qp5                        Successfully assigned vllm-lab/vllm-876cdb784-l6qp5 to gpu-node-3
+6m26s       Normal    Pulled                 pod/vllm-876cdb784-rb7tv                        Container image "vllm/vllm-openai:v0.11.2" already present on machine and can be accessed by the pod
+6m26s       Normal    Pulled                 pod/vllm-876cdb784-l6qp5                        Container image "vllm/vllm-openai:v0.11.2" already present on machine and can be accessed by the pod
+6m26s       Normal    Started                pod/vllm-876cdb784-rb7tv                        Container started
+6m26s       Normal    Created                pod/vllm-876cdb784-rb7tv                        Container created
+6m26s       Normal    Created                pod/vllm-876cdb784-l6qp5                        Container created
+6m25s       Normal    Started                pod/vllm-876cdb784-l6qp5                        Container started
+5m26s       Warning   Unhealthy              pod/vllm-876cdb784-rb7tv                        Startup probe failed: Get "http://REDACTED_IP:8000/health": dial tcp REDACTED_IP:8000: connect: connection refused
+5m26s       Warning   Unhealthy              pod/vllm-876cdb784-l6qp5                        Startup probe failed: Get "http://REDACTED_IP:8000/health": dial tcp REDACTED_IP:8000: connect: connection refused
+11s         Normal    SuccessfulDelete       replicaset/vllm-876cdb784                       Deleted pod: vllm-876cdb784-l6qp5
+11s         Normal    SuccessfulRescale      horizontalpodautoscaler/keda-hpa-vllm-waiting   New size: 2; reason: All metrics below target
+11s         Normal    Killing                pod/vllm-876cdb784-l6qp5                        Stopping container vllm
+11s         Normal    ScalingReplicaSet      deployment/vllm                                 Scaled down replica set vllm-876cdb784 from 3 to 2

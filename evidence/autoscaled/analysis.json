@@ -1,0 +1,30 @@
+{
+  "requests": 2246,
+  "successes": 2246,
+  "p95_ttft_s": 4.6304002739998396,
+  "p95_e2e_s": 6.853666112999235,
+  "p95_queue_histogram": {
+    "estimate_s": 4.041808873720135,
+    "bucket_low_s": 2.5,
+    "bucket_high_s": 5.0
+  },
+  "mean_queue_s": 0.8772261752684886,
+  "max_waiting": 16.0,
+  "max_ready": 3,
+  "first_three_ready_s": 81.07851192700036,
+  "max_desired": 3,
+  "cpu_total_mean_cores": 2.8251397134677423,
+  "cpu_total_max_cores": 3.244562897,
+  "max_pod_working_set_mib": 2942.54296875,
+  "completions_by_pod": {
+    "vllm-876cdb784-k5svg": 991.0,
+    "vllm-876cdb784-rb7tv": 618.0,
+    "vllm-876cdb784-l6qp5": 637.0
+  },
+  "telemetry_errors": [],
+  "after_three_ready": {
+    "requests": 1942,
+    "p95_ttft_s": 1.7535813189997498,
+    "p95_e2e_s": 3.986612966999928
+  }
+}

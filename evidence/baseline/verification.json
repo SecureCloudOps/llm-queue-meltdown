@@ -1,0 +1,12 @@
+{
+  "placements": {
+    "vllm-876cdb784-k5svg": [
+      "gpu-node-1"
+    ]
+  },
+  "max_recorded_restarts": {
+    "vllm-876cdb784-k5svg": 0
+  },
+  "all_requests_have_expected_token_counts": true,
+  "sample_count": 63
+}

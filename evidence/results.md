@@ -1,4 +1,150 @@
-# Experiment results — September 28–29, 2026
+# EKS GPU experiment results — October 2, 2026
+
+A controlled inference overload experiment on three pre-provisioned T4 GPU
+nodes. Terraform fixes node capacity at three; KEDA changes only vLLM pods.
+The baseline held one replica, then the identical workload ran with KEDA
+resumed. These measurements are separate from the earlier local CPU experiment.
+
+## Environment and method
+
+- AWS EKS, Kubernetes 1.35; three on-demand `g4dn.xlarge` nodes, one T4 each.
+- vLLM 0.11.2, `vllm/vllm-openai:v0.11.2`; observed image digest:
+  `sha256:2c908d5a84ed251b6a17d179f42d06df1aff353007779ac5eecd8a0ea3fe9331`.
+- `HuggingFaceTB/SmolLM2-135M-Instruct`, revision
+  `12fd25f77366fa6b3b4b768ec3050bf629380bac`, served as `lab-small`, FP16.
+- Context 1024, eight sequences, 256-token batches, 256 MiB KV cache;
+  eager execution, prefix caching disabled. One GPU per pod; CPU request/limit
+  2/3 cores, RAM request/limit 4/8 GiB. GPU sharing was not configured.
+- Prometheus 3.5.0 discovers each pod, scraping every five seconds.
+  KEDA 2.20.2 uses summed `vllm:num_requests_waiting`, target three waiting
+  requests per replica, min one/max three, 300-second scale-down stabilization.
+- 24 closed-loop clients, a 300-second dispatch window, exactly 700 input
+  and 128 output tokens per request. Outstanding requests drain before exit.
+  Token counts were verified for every successful request in both captures.
+- Requests use fresh connections to the in-cluster Service; no port-forward.
+  Baseline: KEDA paused at one replica. Autoscaled: pause removed.
+
+Run labels: `eks-baseline-20261002T153844Z` and
+`eks-autoscaled-20261002T162017Z`. These labels are client UTC start labels;
+telemetry and request timestamps within each capture are elapsed seconds.
+
+## Full-run comparison
+
+| Measurement | Fixed one replica | KEDA enabled |
+|---|---:|---:|
+| Successful requests | 1072/1072 | 2246/2246 |
+| Request failures | 0 | 0 |
+| Maximum desired / Ready replicas | 1 / 1 | 3 / 3 |
+| First sample with three Ready replicas | — | 81.08 s |
+| Mean queue time | 4.49 s | 0.88 s |
+| Mean client TTFT | 4.57 s | 0.96 s |
+| Mean client E2E latency | 6.79 s | 3.22 s |
+| P95 client TTFT | 4.67 s | 4.63 s |
+| P95 client E2E latency | 6.89 s | 6.85 s |
+| Estimated P95 queue time | 4.87 s | 4.04 s |
+| Peak sampled waiting requests | 21 | 16 |
+| Mean aggregate pod CPU | 0.97 cores | 2.83 cores |
+| Peak aggregate pod CPU | 1.08 cores | 3.24 cores |
+| Peak per-pod working-set RAM | 2253 MiB | 2943 MiB |
+| Maximum sampled model-container restarts | 0 | 0 |
+| Telemetry errors | 0 | 0 |
+| Runner elapsed time, including drain/final observation | 316.10 s | 312.39 s |
+
+Mean queue time fell **80.5%**, mean E2E latency fell **52.6%**, and the
+same-concurrency dispatch window completed **2.10×** as many requests.
+Full-run P95 latency barely changed.
+
+## Capacity and trigger proof
+
+[Scaling events](autoscaled/events.txt) record the KEDA-managed HPA selecting
+three replicas because external metric `s0-prometheus` was above target.
+The raw samples start at one desired/Ready replica and reach three Ready
+replicas at 81.08 seconds. Samples record one GPU reservation per pod and
+placement on three distinct nodes. Per-pod completion-counter deltas:
+
+| Pod | Sanitized node alias | Completions | Maximum sampled restarts |
+|---|---|---:|---:|
+| `vllm-876cdb784-k5svg` | `gpu-node-1` | 991 | 0 |
+| `vllm-876cdb784-rb7tv` | `gpu-node-2` | 618 | 0 |
+| `vllm-876cdb784-l6qp5` | `gpu-node-3` | 637 | 0 |
+
+The counts sum to 2246 and match successful client requests. The baseline
+pod completed all 1072 requests with zero sampled restarts. Placement/restart
+checks are retained in [baseline verification](baseline/verification.json)
+and [autoscaled verification](autoscaled/verification.json).
+
+The final [pod snapshot](autoscaled/pods-after.txt) was collected after the
+run: scale-down had already removed one pod, leaving two. It is not the proof
+of three replicas during load; use the time-series samples and counters.
+Node instance type and allocatable GPU count were checked before the runs,
+but a standalone before/after node inventory was not saved with these captures.
+The captured node assignments establish three distinct serving nodes; fixed
+node capacity is configured in Terraform. GPU utilization was not measured.
+
+## Startup and interpretation
+
+The measured scale-out used **cached container images**. The event capture
+also contains an earlier scale-out whose image pulls took 6m19s and 6m32s;
+those pods were subsequently deleted. During the measured run, both new
+pods report that their image was already present. The 81-second result
+includes new pod/model startup, not a first download of the 14 GB image.
+Model caches are per-pod ephemeral; the original baseline pod was already warm.
+
+For the 1942 requests started after three replicas became Ready, P95 TTFT
+was 1.75 s and P95 E2E was 3.99 s. This subset supports improved latency after
+usable capacity arrived; it does not replace the full-run comparison.
+
+The evidence supports: queue growth triggered KEDA, additional GPU-backed
+pods became Ready and served traffic through the Service, and average queue
+and E2E latency improved. Startup-period requests kept full-run tail latency
+high. CPU was below its three-core per-pod limit in this EKS run; the earlier
+local CPU run did saturate CPU. Inference metrics expose queueing impact in
+both environments. No CPU autoscaler comparison was performed.
+
+## Measurement limits
+
+Each scenario ran once. Fixed concurrency allows more requests when responses
+become faster; this is not a fixed-arrival-rate throughput benchmark.
+TTFT is time to first nonempty streamed text; client P95 uses nearest rank.
+Queue means use server histogram sum/count deltas. Queue P95 interpolates
+within a broad 2.5–5 s bucket and is approximate. Five-second samples and
+metrics-server refresh intervals can miss short peaks. Restart claims apply
+to sampled model container statuses. Events mix prior and measured activity,
+and their `LAST SEEN` values are relative to the time they were collected.
+No claim of a production outage, GPU saturation or a latency SLO is made.
+
+## Evidence and reproducibility
+
+- [Baseline summary](baseline/summary.json) and [analysis](baseline/analysis.json).
+- [Autoscaled summary](autoscaled/summary.json) and [analysis](autoscaled/analysis.json).
+- [EKS execution instructions](../k8s/README.md), [Terraform](../terraform/README.md),
+  [load runner](../load/load_test.py), [analyzer](../load/analyze_results.py).
+- Raw attachment: `eks-evidence-2026-10-02.tar.gz`; verify it with
+  [the SHA-256 checksum](raw-archive.sha256).
+
+The archive contains per-request timings/token usage, sampled per-pod metrics,
+before/after metrics, summaries, analyses, verification records and events.
+Private addresses and AWS identifiers are removed; node names are replaced
+consistently. Kubernetes snapshots retain only measurement-relevant fields.
+The original local captures are untouched. Re-running the existing analyzer
+on the sanitized archive reproduced both original analyses exactly.
+
+After downloading and extracting the release attachment:
+
+```sh
+sha256sum -c evidence/raw-archive.sha256
+# macOS can use: shasum -a 256 -c evidence/raw-archive.sha256
+tar -xzf eks-evidence-2026-10-02.tar.gz
+python3 load/analyze_results.py eks-evidence-2026-10-02/baseline
+python3 load/analyze_results.py eks-evidence-2026-10-02/autoscaled
+```
+
+## Historical local CPU evidence
+
+<details>
+<summary>Earlier ARM64 CPU measurements and investigation</summary>
+
+### Local CPU experiment — September 28–29, 2026
 
 Both runs used SmolLM2-135M-Instruct, BF16, the same serving limits, 24 concurrent clients, and a five-minute dispatch window. Every request contained 700 input tokens and generated 128 output tokens. Outstanding requests were allowed to finish. Requests went to the ClusterIP DNS name inside Kubernetes using fresh connections; no port-forward was used.
 
@@ -17,7 +163,7 @@ Both runs used SmolLM2-135M-Instruct, BF16, the same serving limits, 24 concurre
 | Peak aggregate vLLM CPU | 1.00 cores | 3.00 cores |
 | Peak sampled per-pod RAM | 2899 MiB | 2885 MiB |
 
-## Usable-capacity proof
+### Usable-capacity proof
 
 KEDA scaled 1 → 3 Ready replicas in **76 seconds** (first sampled at 76.18 s). Pod memory was approximately **2.7–2.9 GiB**: one snapshot recorded 2737, 2759, and 2884 MiB. Per-pod completion-counter increases during the autoscaled run:
 
@@ -29,7 +175,7 @@ All three remained Ready with zero model-container restarts during the test. KED
 
 Request failures: **zero** (65/65 baseline; 105/105 autoscaled). Model-container restarts: **zero** in both runs, verified from sampled container statuses. No telemetry errors were recorded.
 
-## Interpretation
+### Interpretation
 
 The scaler now adds usable serving capacity, and the Kubernetes Service distributes new requests to it. Average queue time and latency improved, and more requests completed under the same concurrency and dispatch duration. Overall p95 and maximum waiting depth did not improve dramatically: the run includes cold-start backlog, and existing queued requests stay on the original pod.
 
@@ -37,13 +183,13 @@ For the 75 requests started after all three replicas became Ready, p95 TTFT was 
 
 CPU was saturated per active pod, not low. Aggregate CPU rises as replicas add compute. This does not demonstrate that a properly normalized CPU dashboard would miss the overload, nor that a latency SLO has been met.
 
-## Measurement limits
+### Measurement limits
 
 Queue p95 estimates interpolate within the same broad 60–120 s bucket in both runs; the apparent small difference is not precise. Client TTFT/E2E percentiles use individual streaming request timings. Mean queue time uses server histogram counter deltas. Metrics and CPU were sampled approximately every five seconds and can miss short peaks.
 
 This is a fixed-concurrency closed-loop workload, not a fixed arrival rate: faster responses allow more requests. Baseline elapsed time including drain was 420.49 s; autoscaled elapsed time was 349.58 s. Each scenario ran once, on separate days, so these are descriptive lab results, not statistically controlled performance guarantees.
 
-## Investigation history (separate configurations)
+### Investigation history (separate configurations)
 
 These earlier Qwen2.5-0.5B results explain the remediation; they are not the
 baseline for the SmolLM2 comparison above.
@@ -73,7 +219,7 @@ baseline for the SmolLM2 comparison above.
   restarted and the load generator was OOM-killed. Switching to SmolLM2
   and retaining adequate VM headroom enabled the final comparison.
 
-## Provenance
+### Provenance
 
 During repository cleanup, both final analyses were recomputed from the
 original per-pod before/after metrics, sampled metrics and request records;
@@ -85,82 +231,5 @@ measurements and relevant historical findings; the original raw runs are
 not included, so historical statistics cannot be independently recomputed
 from this repository alone. The runner and analyzer below produce new captures.
 
-## Reproduce the final comparison
 
-Use Python 3.12+, kubectl and Helm, with your chosen Kubernetes context active.
-The measured environment was an Apple Silicon 16 GiB host running a Linux
-ARM64 Colima VM with four CPUs and 12 GiB RAM, k3s v1.33.4+k3s1 and
-metrics-server. The deployment intentionally selects Linux ARM64; the pinned
-CPU image is the tested artifact, not a claim of portability to other architectures.
-The image reports vLLM 0.30.0. Internet access is needed for images, the Helm
-chart and public model weights; no Hugging Face token was required.
-
-The manifest pins SmolLM2 revision `12fd25f77366fa6b3b4b768ec3050bf629380bac`:
-BF16, context 1024, eight sequences, 256-token batches, 256 MiB KV cache,
-one CPU, 2560 MiB memory request and 3 GiB limit per pod. KEDA 2.20.2 targets
-three waiting requests per replica, min one/max three, with 300 s scale-down
-stabilization. Prometheus 3.5.0 discovers each pod and scrapes every five seconds.
-The Python scripts use only the standard library.
-
-From the repository root, on a dedicated lab cluster:
-
-```sh
-kubectl apply -f k8s/vllm-deployment.yaml -f k8s/vllm-service.yaml
-kubectl apply -f k8s/prometheus.yaml
-helm repo add kedacore https://kedacore.github.io/charts
-helm repo update kedacore
-helm upgrade --install keda kedacore/keda --version 2.20.2 \
-  --namespace keda --create-namespace -f k8s/keda-values.yaml --wait --timeout 5m
-kubectl -n vllm-lab rollout status deployment/vllm --timeout=15m
-kubectl -n vllm-lab rollout status deployment/prometheus --timeout=3m
-kubectl apply -f k8s/keda-scaledobject.yaml
-kubectl -n vllm-lab wait --for=condition=Ready scaledobject/vllm-waiting --timeout=60s
-kubectl -n vllm-lab create configmap load-test \
-  --from-file=load_test.py=load/load_test.py --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -f k8s/load-generator.yaml
-kubectl -n vllm-lab wait --for=condition=Ready pod/load-generator --timeout=3m
-```
-
-Do not reapply the deployment's `replicas: 1` during autoscaling measurements.
-Service port-forward selects a single pod; run this workload inside the cluster.
-Use fresh result directories for every run. The load pod has ephemeral storage
-and a 24-hour lifetime; recreate it if it has completed.
-
-```sh
-kubectl -n vllm-lab annotate scaledobject vllm-waiting \
-  autoscaling.keda.sh/paused-replicas='1' --overwrite
-# Wait until desired AND Ready replicas are both one before starting.
-kubectl -n vllm-lab get deployment vllm -w
-# Stop watching with Ctrl-C once stable, then run the baseline.
-kubectl -n vllm-lab exec load-generator -- env DURATION=300 CONCURRENCY=24 \
-  RESULTS_DIR=/results/baseline python /scripts/load_test.py
-kubectl -n vllm-lab annotate scaledobject vllm-waiting autoscaling.keda.sh/paused-replicas-
-kubectl -n vllm-lab exec load-generator -- env DURATION=300 CONCURRENCY=24 \
-  RESULTS_DIR=/results/autoscaled python /scripts/load_test.py
-mkdir -p artifacts
-kubectl -n vllm-lab cp load-generator:/results/baseline artifacts/baseline
-kubectl -n vllm-lab cp load-generator:/results/autoscaled artifacts/autoscaled
-python3 load/analyze_results.py artifacts/baseline
-python3 load/analyze_results.py artifacts/autoscaled
-```
-
-Each run writes streaming timings, token counts, per-pod raw metrics,
-replica status and CPU/memory samples. The analyzer derives queue mean,
-client percentiles, time to three Ready replicas and per-pod completions.
-Check telemetry errors, failures and sampled container restart counts before
-accepting a run. Copy results before deleting the load pod.
-
-Remove the lab resources when finished (this deletes ephemeral results and
-Prometheus data; uninstall KEDA only if installed solely for this experiment):
-
-```sh
-kubectl delete -f k8s/keda-scaledobject.yaml
-kubectl delete -f k8s/load-generator.yaml
-kubectl -n vllm-lab delete configmap load-test
-kubectl delete -f k8s/prometheus.yaml
-kubectl delete -f k8s/vllm-service.yaml
-kubectl delete -f k8s/vllm-deployment.yaml
-helm uninstall keda --namespace keda
-```
-
-Helm may retain cluster-scoped KEDA CRDs after uninstall.
+</details>

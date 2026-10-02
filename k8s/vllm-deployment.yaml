@@ -23,33 +23,28 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       nodeSelector:
-        kubernetes.io/arch: arm64
+        kubernetes.io/arch: amd64
+        eks.amazonaws.com/nodegroup: gpu
         kubernetes.io/os: linux
       containers:
         - name: vllm
-          image: vllm/vllm-openai-cpu@sha256:09e656588c2dc572240cb62a22f75681dc640a99c61537bbd55e9eb1dc3d4fbc
+          image: vllm/vllm-openai:v0.11.2
           imagePullPolicy: IfNotPresent
           args:
             - HuggingFaceTB/SmolLM2-135M-Instruct
             - --revision=12fd25f77366fa6b3b4b768ec3050bf629380bac
             - --served-model-name=lab-small
-            - --dtype=bfloat16
+            - --dtype=float16
             - --max-model-len=1024
             - --max-num-seqs=8
             - --kv-cache-memory-bytes=268435456
             - --max-num-batched-tokens=256
+            - --gpu-memory-utilization=0.8
+            - --no-enable-prefix-caching
             - --enforce-eager
             - --host=0.0.0.0
             - --port=8000
           env:
-            - name: TCMALLOC_RELEASE_RATE
-              value: "10"
-            - name: TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES
-              value: "16777216"
-            - name: VLLM_CPU_OMP_THREADS_BIND
-              value: nobind
-            - name: OMP_NUM_THREADS
-              value: "1"
             - name: HF_HOME
               value: /model-cache
           ports:
@@ -57,11 +52,13 @@ spec:
               containerPort: 8000
           resources:
             requests:
-              cpu: "1"
-              memory: 2560Mi
+              cpu: "2"
+              memory: 4Gi
+              nvidia.com/gpu: 1
             limits:
-              cpu: "1"
-              memory: 3Gi
+              cpu: "3"
+              memory: 8Gi
+              nvidia.com/gpu: 1
           startupProbe:
             httpGet:
               path: /health

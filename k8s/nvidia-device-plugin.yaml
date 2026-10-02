@@ -1,0 +1,42 @@
+# Adapted from NVIDIA/k8s-device-plugin v0.17.1's static DaemonSet.
+# EKS AL2023 NVIDIA supplies the driver/runtime; this advertises GPU capacity.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: nvidia-device-plugin
+  template:
+    metadata:
+      labels:
+        app: nvidia-device-plugin
+    spec:
+      automountServiceAccountToken: false
+      priorityClassName: system-node-critical
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        eks.amazonaws.com/nodegroup: gpu
+      containers:
+        - name: nvidia-device-plugin
+          image: nvcr.io/nvidia/k8s-device-plugin:v0.17.1
+          env:
+            - name: FAIL_ON_INIT_ERROR
+              value: "true"
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+            type: Directory
